@@ -36,7 +36,7 @@ os.kill(os.getpid(), signal.SIGINT)
 #should make a right turn
 
 try:
-    for i in range(3)
+    for i in range(3):
         for j in range(4):
            #robot.drive(.2,0,0)
            #time.sleep(1)
