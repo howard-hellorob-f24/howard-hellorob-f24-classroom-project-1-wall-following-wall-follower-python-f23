@@ -46,11 +46,10 @@ def cross_product(v1, v2):
 
 # Initialize the robot and parameters
 robot = MBot()
-setpoint = 0.5  # Desired distance from the wall, adjust as needed.
-tolerance = 0.1  # Acceptable range around setpoint for bang-bang control
-x_velocity = 0.1  # Constant forward speed along x-axis
-y_velocity = 0.0  # No movement along y-axis
-angular_speed = 0.3  # Fixed turning speed for bang-bang control
+setpoint = 1  # Desired distance from the wall, adjust as needed.
+tolerance = 0.1  # Acceptable range around setpoint
+approach_speed = 1  # Forward speed when approaching the wall
+turn_speed = 0.3  # Turning speed for alignment
 
 try:
     while True:
@@ -64,19 +63,39 @@ try:
 
         print(f"Distance to wall: {min_dist}, Angle to wall: {min_angle}")
 
-        # Step 2: Bang-bang control for angular velocity
         if min_dist > setpoint + tolerance:
-            # Too far from the wall, turn towards it
-            angular_velocity = -angular_speed  # Negative to turn toward the wall
-        elif min_dist < setpoint - tolerance:
-            # Too close to the wall, turn away
-            angular_velocity = angular_speed  # Positive to turn away from the wall
-        else:
-            # Within the tolerance range, move straight
+            # Step 2: Move toward the wall if too far away
+            x_velocity = approach_speed
+            y_velocity = 0
             angular_velocity = 0
+            print("Moving toward the wall.")
+            robot.drive(x_velocity,y_velocity,angular_velocity)
+            time.sleep(1)
+
+        
+        else:
+            # Step 3: If close enough to the wall, align parallel
+            x_velocity = 0  # Stop forward movement
+            y_velocity = 0
+            print("stopping")
+            robot.drive(0,0,0)
+            time.sleep(.5)
+            if min_angle > 0:
+                print(min_angle)
+                angular_velocity = -turn_speed  # Turn left
+            else:
+                print(min_angle)
+                angular_velocity = turn_speed  # Turn right
+            print("Turning to align parallel to the wall.")
+
+            robot.drive(x_velocity,y_velocity,angular_velocity)
+            time.sleep(1)
+            robot.drive(1,0,0)
+            time.sleep(.5)
+
 
         # Drive the robot with the specified x, y, and angular velocities
-        robot.drive(x_velocity, y_velocity, angular_velocity)
+        #robot.drive(x_velocity, y_velocity, angular_velocity)
 
         # Small delay to avoid overloading the robot with commands
         time.sleep(0.1)
