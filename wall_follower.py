@@ -55,7 +55,7 @@ angular_speed = 0.3  # Fixed turning speed for bang-bang control
 try:
     while True:
         # Step 1: Get Lidar data and find the closest wall
-        ranges, thetas = robot.read_lidar_scan()
+        ranges, thetas = robot.read_lidar()
         min_dist, min_angle = find_min_dist(ranges, thetas)
 
         if min_dist is None or min_angle is None:
