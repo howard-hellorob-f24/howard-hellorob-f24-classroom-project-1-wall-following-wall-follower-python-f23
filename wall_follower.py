@@ -48,7 +48,7 @@ def cross_product(v1, v2):
 robot = MBot()
 setpoint = .5  # Desired distance from the wall, adjust as needed.
 tolerance = 0.1  # Acceptable range around setpoint
-approach_speed = 1  # Forward speed when approaching the wall
+approach_speed = .6  # Forward speed when approaching the wall
 turn_speed = 0.3  # Turning speed for alignment
 
 try:
@@ -56,6 +56,7 @@ try:
         # Step 1: Get Lidar data and find the closest wall
         ranges, thetas = robot.read_lidar()
         min_dist, min_angle = find_min_dist(ranges, thetas)
+    
 
         if min_dist is None or min_angle is None:
             print("No valid wall detected.")
@@ -86,16 +87,17 @@ try:
                 print("turning left")
                 robot.drive(x_velocity,y_velocity,-1.57)
                 
+                time.sleep(1.3)
+                robot.drive(.5,0,0)
                 time.sleep(1)
-                robot.drive(1,0,0)
-                time.sleep(.5)
             else:
                 print(min_angle)
                 angular_velocity = turn_speed  # Turn right
                 print("turning right")
                 robot.drive(x_velocity,y_velocity,1.57)
-                robot.drive(1,0,0)
-                time.sleep(.5)
+                time.sleep(1.3)
+                robot.drive(.5,0,0)
+
                 time.sleep(1)
             print("Turning to align parallel to the wall.")
 
