@@ -46,7 +46,7 @@ def cross_product(v1, v2):
 
 # Initialize the robot and parameters
 robot = MBot()
-setpoint = 1  # Desired distance from the wall, adjust as needed.
+setpoint = .5  # Desired distance from the wall, adjust as needed.
 tolerance = 0.1  # Acceptable range around setpoint
 approach_speed = 1  # Forward speed when approaching the wall
 turn_speed = 0.3  # Turning speed for alignment
@@ -79,20 +79,28 @@ try:
             y_velocity = 0
             print("stopping")
             robot.drive(0,0,0)
-            time.sleep(.5)
+            time.sleep(1)
             if min_angle > 0:
                 print(min_angle)
                 angular_velocity = -turn_speed  # Turn left
+                print("turning left")
+                robot.drive(x_velocity,y_velocity,-1.57)
+                
+                time.sleep(1)
+                robot.drive(1,0,0)
+                time.sleep(.5)
             else:
                 print(min_angle)
                 angular_velocity = turn_speed  # Turn right
+                print("turning right")
+                robot.drive(x_velocity,y_velocity,1.57)
+                robot.drive(1,0,0)
+                time.sleep(.5)
+                time.sleep(1)
             print("Turning to align parallel to the wall.")
 
-            robot.drive(x_velocity,y_velocity,angular_velocity)
-            time.sleep(1)
-            robot.drive(1,0,0)
-            time.sleep(.5)
 
+       
 
         # Drive the robot with the specified x, y, and angular velocities
         #robot.drive(x_velocity, y_velocity, angular_velocity)
