@@ -56,7 +56,6 @@ try:
         # Step 1: Get Lidar data and find the closest wall
         ranges, thetas = robot.read_lidar()
         min_dist, min_angle = find_min_dist(ranges, thetas)
-    
 
         if min_dist is None or min_angle is None:
             print("No valid wall detected.")
@@ -64,48 +63,49 @@ try:
 
         print(f"Distance to wall: {min_dist}, Angle to wall: {min_angle}")
 
+        # Define the vector toward the wall based on the angle to the wall
+        v_wall = [np.cos(min_angle), np.sin(min_angle), 0]
+        up_vector = [0, 0, 1]
+
+        # Compute cross product with up_vector to get direction for alignment
+        cross = cross_product(v_wall, up_vector)  
+        forward_velocity = np.linalg.norm(cross)
+
         if min_dist > setpoint + tolerance:
             # Step 2: Move toward the wall if too far away
             x_velocity = approach_speed
             y_velocity = 0
             angular_velocity = 0
             print("Moving toward the wall.")
-            robot.drive(x_velocity,y_velocity,angular_velocity)
+            robot.drive(x_velocity, y_velocity, angular_velocity)
             time.sleep(1)
-
+        
+        elif min_dist < setpoint - tolerance:
+            # If too close to the wall, adjust away
+            x_velocity = -approach_speed
+            y_velocity = 0
+            angular_velocity = 0
+            print("Backing away from the wall.")
+            robot.drive(x_velocity, y_velocity, angular_velocity)
+            time.sleep(1)
         
         else:
-            # Step 3: If close enough to the wall, align parallel
-            x_velocity = 0  # Stop forward movement
+            # Step 3: Follow along the wall by adjusting angle
+            x_velocity = forward_velocity * 0.5  # Slower forward speed for wall-following
             y_velocity = 0
-            print("stopping")
-            robot.drive(0,0,0)
-            time.sleep(1)
-            if min_angle > 0:
-                print(min_angle)
-                angular_velocity = -turn_speed  # Turn left
-                print("turning left")
-                robot.drive(x_velocity,y_velocity,-1.57)
-                
-                time.sleep(1.3)
-                robot.drive(.5,0,0)
-                time.sleep(1)
+            
+            if min_angle > tolerance:
+                angular_velocity = -turn_speed  # Adjust left to align parallel
+                print("Adjusting left to align parallel to the wall.")
+            elif min_angle < -tolerance:
+                angular_velocity = turn_speed  # Adjust right to align parallel
+                print("Adjusting right to align parallel to the wall.")
             else:
-                print(min_angle)
-                angular_velocity = turn_speed  # Turn right
-                print("turning right")
-                robot.drive(x_velocity,y_velocity,1.57)
-                time.sleep(1.3)
-                robot.drive(.5,0,0)
-
-                time.sleep(1)
-            print("Turning to align parallel to the wall.")
-
-
-       
-
-        # Drive the robot with the specified x, y, and angular velocities
-        #robot.drive(x_velocity, y_velocity, angular_velocity)
+                angular_velocity = 0  # Maintain current heading if aligned
+                print("Following along the wall.")
+            
+            robot.drive(x_velocity, y_velocity, angular_velocity)
+            time.sleep(1)
 
         # Small delay to avoid overloading the robot with commands
         time.sleep(0.1)
@@ -113,3 +113,4 @@ try:
 except KeyboardInterrupt:
     print("Control+C pressed. Stopping the robot.")
     robot.stop()
+
