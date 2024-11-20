@@ -80,18 +80,9 @@ try:
             robot.drive(x_velocity, y_velocity, angular_velocity)
             time.sleep(0.5)
 
-        elif min_dist < setpoint - tolerance:
-            # Step 3: Back away from the wall and adjust heading
-            x_velocity = -approach_speed
-            y_velocity = 0
-            angular_velocity = -min_angle * turn_speed_factor  # Turn slightly away while backing
-            print("Backing away from the wall and aligning.")
-            robot.drive(x_velocity, y_velocity, angular_velocity)
-            time.sleep(0.5)
-
-        else:
-            # Step 4: Follow along the wall by adjusting angle
-            x_velocity = forward_velocity * 0.5  # Slower forward speed for wall-following
+        elif setpoint - tolerance <= min_dist <= setpoint + tolerance:
+            # Step 3: Follow along the wall within the acceptable range
+            x_velocity = forward_velocity * 0.5  # Slower forward speed
             y_velocity = 0
 
             if min_angle > tolerance:
@@ -101,11 +92,20 @@ try:
                 angular_velocity = turn_speed  # Adjust right to align parallel
                 print("Adjusting right to align parallel to the wall.")
             else:
-                angular_velocity = 0  # Maintain current heading if aligned
+                angular_velocity = 0  # Maintain current heading
                 print("Following along the wall.")
 
             robot.drive(x_velocity, y_velocity, angular_velocity)
-            time.sleep(1)
+            time.sleep(0.5)
+
+        else:
+            # Step 4: Too close to the wall, adjust with minimal backing and turning
+            x_velocity = -approach_speed * 0.5  # Gentle backing
+            y_velocity = 0
+            angular_velocity = -min_angle * 0.3  # Turn slightly away while backing
+            print("Too close to the wall! Backing slightly and realigning.")
+            robot.drive(x_velocity, y_velocity, angular_velocity)
+            time.sleep(0.5)
 
         # Small delay to avoid overloading the robot with commands
         time.sleep(0.1)
@@ -113,5 +113,6 @@ try:
 except KeyboardInterrupt:
     print("Control+C pressed. Stopping the robot.")
     robot.stop()
+
 
 
