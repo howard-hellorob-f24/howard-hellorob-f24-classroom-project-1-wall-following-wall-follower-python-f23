@@ -100,12 +100,13 @@ try:
 
         else:
             # Step 4: Too close to the wall, adjust with minimal backing and turning
-            x_velocity = -approach_speed * 0.5  # Gentle backing
+            x_velocity = -1 * 0.5  # Gentle backing
             y_velocity = 0
             angular_velocity = -min_angle * 0.3  # Turn slightly away while backing
             print("Too close to the wall! Backing slightly and realigning.")
             robot.drive(x_velocity, y_velocity, angular_velocity)
             time.sleep(0.5)
+            break
 
         # Small delay to avoid overloading the robot with commands
         time.sleep(0.1)
