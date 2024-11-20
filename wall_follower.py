@@ -46,7 +46,7 @@ def cross_product(v1, v2):
 
 # Initialize the robot and parameters
 robot = MBot()
-setpoint = .5  # Desired distance from the wall, adjust as needed.
+setpoint = .4  # Desired distance from the wall, adjust as needed.
 tolerance = 0.1  # Acceptable range around setpoint
 approach_speed = .6  # Forward speed when approaching the wall
 turn_speed = 0.3  # Turning speed for alignment
@@ -81,6 +81,8 @@ try:
             time.sleep(0.5)
 
         elif setpoint - tolerance <= min_dist <= setpoint + tolerance:
+            print("IN between")
+            
             # Step 3: Follow along the wall within the acceptable range
             x_velocity = forward_velocity * 0.5  # Slower forward speed
             y_velocity = 0
@@ -100,13 +102,18 @@ try:
 
         else:
             # Step 4: Too close to the wall, adjust with minimal backing and turning
-            x_velocity = -1 * 0.5  # Gentle backing
+            x_velocity = (-approach_speed * 0.5) - .2  # Gentle backing
             y_velocity = 0
             angular_velocity = -min_angle * 0.3  # Turn slightly away while backing
             print("Too close to the wall! Backing slightly and realigning.")
-            robot.drive(x_velocity, y_velocity, angular_velocity)
-            time.sleep(0.5)
-            break
+            robot.drive(x_velocity, y_velocity, 0)
+            time.sleep(.5)
+
+            print("Turning")
+            robot.drive(0, 0, angular_velocity)
+            time.sleep(.5)
+
+           
 
         # Small delay to avoid overloading the robot with commands
         time.sleep(0.1)
