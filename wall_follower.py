@@ -6,8 +6,6 @@ from mbot_bridge.api import MBot
 def find_min_dist(ranges, thetas):
     """Finds the length and angle of the minimum ray in the scan.
 
-    Make sure you ignore any rays with length 0! Those are invalid.
-
     Args:
         ranges (list): The length of each ray in the Lidar scan.
         thetas (list): The angle of each ray in the Lidar scan.
@@ -15,9 +13,16 @@ def find_min_dist(ranges, thetas):
     Returns:
         tuple: The length and angle of the shortest ray in the Lidar scan.
     """
-    min_dist, min_angle = None, None
+    valid_ranges = np.array(ranges)
+    valid_thetas = np.array(thetas)
 
-    # TODO: Find the length and angle of the shortest distance in the ray.
+    valid_index = (valid_ranges > 0).nonzero()[0]
+    if len(valid_index) == 0:
+        return None, None
+
+    min_index = valid_ranges[valid_index].argmin()
+    min_dist = valid_ranges[valid_index][min_index]
+    min_angle = valid_thetas[valid_index][min_index]
 
     return min_dist, min_angle
 
@@ -33,24 +38,89 @@ def cross_product(v1, v2):
         list: The result of the cross product operation.
     """
     res = np.zeros(3)
-    # TODO: Compute the cross product.
+    res[0] = v1[1] * v2[2] - v1[2] * v2[1]
+    res[1] = v1[2] * v2[0] - v1[0] * v2[2]
+    res[2] = v1[0] * v2[1] - v1[1] * v2[0]
     return res
 
 
+# Initialize the robot and parameters
 robot = MBot()
-setpoint = 0  # TODO: Pick your setpoint.
-# TODO: Declare any other variables you might need here.
+setpoint = .4  # Desired distance from the wall, adjust as needed.
+tolerance = 0.1  # Acceptable range around setpoint
+approach_speed = .6  # Forward speed when approaching the wall
+turn_speed = 0.3  # Turning speed for alignment
 
 try:
     while True:
-        # Read the latest lidar scan.
+        # Step 1: Get Lidar data and find the closest wall
         ranges, thetas = robot.read_lidar()
+        min_dist, min_angle = find_min_dist(ranges, thetas)
 
-        # TODO: (P1.2) Write code to follow the nearest wall here.
-        # Hint: You should use the functions cross_product and find_min_dist.
+        if min_dist is None or min_angle is None:
+            print("No valid wall detected.")
+            continue
 
-        # Optionally, sleep for a bit before reading a new scan.
+        print(f"Distance to wall: {min_dist}, Angle to wall: {min_angle}")
+
+        # Define the vector toward the wall based on the angle to the wall
+        v_wall = [np.cos(min_angle), np.sin(min_angle), 0]
+        up_vector = [0, 0, 1]
+
+        # Compute cross product with up_vector to get direction for alignment
+        cross = cross_product(v_wall, up_vector)
+        forward_velocity = np.linalg.norm(cross)
+
+        if min_dist > setpoint + tolerance:
+            # Step 2: Move toward the wall if too far away
+            x_velocity = approach_speed
+            y_velocity = 0
+            angular_velocity = 0  # Move straight toward the wall
+            print("Moving toward the wall.")
+            robot.drive(x_velocity, y_velocity, angular_velocity)
+            time.sleep(0.5)
+
+        elif setpoint - tolerance <= min_dist <= setpoint + tolerance:
+            print("IN between")
+            
+            # Step 3: Follow along the wall within the acceptable range
+            x_velocity = forward_velocity * 0.5  # Slower forward speed
+            y_velocity = 0
+
+            if min_angle > tolerance:
+                angular_velocity = -turn_speed  # Adjust left to align parallel
+                print("Adjusting left to align parallel to the wall.")
+            elif min_angle < -tolerance:
+                angular_velocity = turn_speed  # Adjust right to align parallel
+                print("Adjusting right to align parallel to the wall.")
+            else:
+                angular_velocity = 0  # Maintain current heading
+                print("Following along the wall.")
+
+            robot.drive(x_velocity, y_velocity, angular_velocity)
+            time.sleep(0.5)
+
+        else:
+            # Step 4: Too close to the wall, adjust with minimal backing and turning
+            x_velocity = (-approach_speed * 0.5) - .2  # Gentle backing
+            y_velocity = 0
+            angular_velocity = -min_angle * 0.3  # Turn slightly away while backing
+            print("Too close to the wall! Backing slightly and realigning.")
+            robot.drive(x_velocity, y_velocity, 0)
+            time.sleep(.5)
+
+            print("Turning")
+            robot.drive(0, 0, angular_velocity)
+            time.sleep(.5)
+
+           
+
+        # Small delay to avoid overloading the robot with commands
         time.sleep(0.1)
-except:
-    # Catch any exception, including the user quitting, and stop the robot.
+
+except KeyboardInterrupt:
+    print("Control+C pressed. Stopping the robot.")
     robot.stop()
+
+
+
